@@ -1,0 +1,531 @@
+from tkinter import*
+from tkinter import ttk
+from tkinter.messagebox import showinfo, askquestion
+import sqlite3
+
+
+oidAktStudenta=0
+oidAktOcena=0
+
+root = Tk()
+root.title('Baza danych')
+root.geometry('500x300')
+
+kolumny = ('k_oid', 'k_imie', 'k_nazwisko', 'k_adres', 'k_pesel', 'k_album')
+
+siatkaDanych = ttk.Treeview(root, columns=kolumny, show='headings', height=5)
+siatkaDanych.column("k_oid", minwidth=10, width=50)
+siatkaDanych.column("k_imie", minwidth=10, width=50)
+siatkaDanych.column("k_nazwisko", minwidth=10, width=100)
+siatkaDanych.column("k_adres", minwidth=10, width=100)
+siatkaDanych.column("k_pesel", minwidth=10, width=100)
+siatkaDanych.column("k_album", minwidth=10, width=100)
+
+
+siatkaDanych.heading('k_oid', text='id')
+siatkaDanych.heading('k_imie', text='imie')
+siatkaDanych.heading('k_nazwisko', text='nazwisko')
+siatkaDanych.heading('k_adres', text='adres')
+siatkaDanych.heading('k_pesel', text='pesel')
+siatkaDanych.heading('k_album', text='album')
+
+
+dbPolaczenie = sqlite3.connect('dziekanat.db')
+dbKursor = dbPolaczenie.cursor()
+# sqlQuery="CREATE TABLE studenci (imie text, nazwisko text, adres text, pesel text, album integer)"
+# dbKursor.execute(sqlQuery)
+# dbPolaczenie.commit()
+dbKursor.execute("select oid,* from studenci")
+wynikZapytania=dbKursor.fetchall()
+for wierszDanych in wynikZapytania:
+    siatkaDanych.insert('', END, values=wierszDanych)
+dbPolaczenie.commit()
+dbPolaczenie.close()
+
+
+def odswiezanieBazyDanych():
+    siatkaDanych.delete(*siatkaDanych.get_children())
+    dbPolaczenie = sqlite3.connect('dziekanat.db')
+    dbKursor = dbPolaczenie.cursor()
+    dbKursor.execute("select oid,* from studenci")
+    wynikZapytania=dbKursor.fetchall()
+    for wierszDanych in wynikZapytania:
+        siatkaDanych.insert('', END, values=wierszDanych)
+    dbPolaczenie.commit()
+    dbPolaczenie.close()
+
+
+
+
+
+def obslugaDodawania():
+    oknoDodawania = Toplevel()
+    oknoDodawania.title("Dodaj")
+    oknoDodawania.geometry("400x150")
+
+
+    labelImie = Label(oknoDodawania, text="imie: ")
+    labelImie.grid(row=0, column=0, padx=20)
+    editImie = Entry(oknoDodawania, width=30)
+    editImie.grid(row=0, column=1, padx=20)
+
+    labelNazwisko = Label(oknoDodawania, text="Nazwisko: ")
+    labelNazwisko.grid(row=1, column=0, padx=20)
+    editNazwisko = Entry(oknoDodawania, width=30)
+    editNazwisko.grid(row=1, column=1, padx=20)
+
+    labelAdres = Label(oknoDodawania, text="Adres: ")
+    labelAdres.grid(row=2, column=0, padx=20)
+    editAdres = Entry(oknoDodawania, width=30)
+    editAdres.grid(row=2, column=1, padx=20)
+
+    labelPesel = Label(oknoDodawania, text="Pesel: ")
+    labelPesel.grid(row=3, column=0, padx=20)
+    editPesel = Entry(oknoDodawania, width=30)
+    editPesel.grid(row=3, column=1, padx=20)
+
+    labelAlbum = Label(oknoDodawania, text="Album: ")
+    labelAlbum.grid(row=4, column=0, padx=20)
+    editAlbum = Entry(oknoDodawania, width=30)
+    editAlbum.grid(row=4, column=1, padx=20)
+
+    labelWynik = Label(oknoDodawania, text="")
+    labelWynik.grid(row=7, column=0, columnspan=2)
+
+
+
+    def dodajStudenta():
+        dbPolaczenie = sqlite3.connect('dziekanat.db')
+        dbKursor = dbPolaczenie.cursor()
+        dbKursor.execute("Insert into studenci values (:p_imie, :p_nazwisko, :p_adres, :p_pesel, :p_album)",
+                        {
+                        'p_imie':editImie.get(),
+                        'p_nazwisko':editNazwisko.get(),
+                        'p_adres':editAdres.get(),
+                        'p_pesel':editPesel.get(),
+                        'p_album':editAlbum.get()
+                        })
+        dbPolaczenie.commit()
+        dbPolaczenie.close()
+
+        odswiezanieBazyDanych()
+     
+
+    pDodaj = Button(oknoDodawania, text="Dodaj nowego studenta", command=dodajStudenta)
+    pDodaj.grid(row=5, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+
+def wyborWiersza(event):
+    global oidAktStudenta
+    for selected_item in siatkaDanych.selection():
+        wybranyWiersz = siatkaDanych.item(selected_item)
+        wybraneWartosci = wybranyWiersz['values']
+        oidAktStudenta=wybraneWartosci[0]
+        # showinfo(title='Informacja', message="Identyfikator wybranego studenia:  "+str(wybraneWartosci[0]))
+
+
+
+def obslugaEdytowania():
+
+
+    oknoEdycji = Toplevel()
+    oknoEdycji.title("Edytuj")
+    oknoEdycji.geometry("400x150")
+
+
+    labelImie = Label(oknoEdycji, text="imie: ")
+    labelImie.grid(row=0, column=0, padx=20)
+    editImie = Entry(oknoEdycji, width=30)
+    editImie.grid(row=0, column=1, padx=20)
+
+    labelNazwisko = Label(oknoEdycji, text="Nazwisko: ")
+    labelNazwisko.grid(row=1, column=0, padx=20)
+    editNazwisko = Entry(oknoEdycji, width=30)
+    editNazwisko.grid(row=1, column=1, padx=20)
+
+    labelAdres = Label(oknoEdycji, text="Adres: ")
+    labelAdres.grid(row=2, column=0, padx=20)
+    editAdres = Entry(oknoEdycji, width=30)
+    editAdres.grid(row=2, column=1, padx=20)
+
+    labelPesel = Label(oknoEdycji, text="Pesel: ")
+    labelPesel.grid(row=3, column=0, padx=20)
+    editPesel = Entry(oknoEdycji, width=30)
+    editPesel.grid(row=3, column=1, padx=20)
+
+    labelAlbum = Label(oknoEdycji, text="Album: ")
+    labelAlbum.grid(row=4, column=0, padx=20)
+    editAlbum = Entry(oknoEdycji, width=30)
+    editAlbum.grid(row=4, column=1, padx=20)
+
+    labelWynik = Label(oknoEdycji, text="")
+    labelWynik.grid(row=7, column=0, columnspan=2)
+
+
+    global oidAktStudenta
+    dbPolaczenie = sqlite3.connect('dziekanat.db')
+    dbKursor = dbPolaczenie.cursor()
+    query = "select * from studenci where oid = "+str(oidAktStudenta)
+    dbKursor.execute(query)
+
+    wynikZapytania=dbKursor.fetchall()
+    if(len(wynikZapytania)>0):
+        editImie.delete(0, END)
+        editImie.insert(0, str(wynikZapytania[0][0]))
+        editNazwisko.delete(0, END)
+        editNazwisko.insert(0, str(wynikZapytania[0][1]))
+        editAdres.delete(0, END)
+        editAdres.insert(0, str(wynikZapytania[0][2]))
+        editPesel.delete(0, END)
+        editPesel.insert(0, str(wynikZapytania[0][3]))
+        editAlbum.delete(0, END)
+        editAlbum.insert(0, str(wynikZapytania[0][4]))
+    else:
+        showinfo("Informacja","Nie ma studenta o podanym identyfikatorze")
+
+    dbPolaczenie.commit()
+    dbPolaczenie.close()
+
+    def edytujStudenta():
+        dbPolaczenie = sqlite3.connect('dziekanat.db')
+        dbKursor = dbPolaczenie.cursor()
+        dbKursor.execute("update studenci set imie = :p_imie, nazwisko = :p_nazwisko, adres = :p_adres, pesel = :p_pesel, album = :p_album where oid = :p_oid",
+                        {
+                        'p_imie':editImie.get(),
+                        'p_nazwisko':editNazwisko.get(),
+                        'p_adres':editAdres.get(),
+                        'p_pesel':editPesel.get(),
+                        'p_album':editAlbum.get(),
+                        'p_oid': str(oidAktStudenta)
+                        })
+        dbPolaczenie.commit()
+        dbPolaczenie.close()   
+
+        odswiezanieBazyDanych()
+
+    pEdytuj = Button(oknoEdycji, text="Edytuj", command=edytujStudenta)
+    pEdytuj.grid(row=5, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+def usunStudenta(usuwaneOID):
+    dbPolaczenie = sqlite3.connect('dziekanat.db')
+    dbKursor = dbPolaczenie.cursor()
+    dbKursor.execute("delete from studenci where oid = "+str(usuwaneOID))
+    dbPolaczenie.commit()
+    dbPolaczenie.close()
+
+    odswiezanieBazyDanych()
+
+def obslugaUsuwania():
+    global oidAktStudenta
+    pomUsuwane=oidAktStudenta
+    wynik = askquestion("Zapytanie", "Czy na pewno chcesz usunąć studenta o ID "+str(pomUsuwane)+" ?") 
+    if wynik=="yes":
+        usunStudenta(pomUsuwane)
+    return
+
+
+
+siatkaDanych.bind('<<TreeviewSelect>>', wyborWiersza)
+
+siatkaDanych.grid(row=0, column=0, sticky='nsew')
+
+scrollbar = ttk.Scrollbar(root, orient=VERTICAL, command=siatkaDanych.yview)
+siatkaDanych.configure(yscroll=scrollbar.set)
+scrollbar.grid(row=0, column=1, sticky='ns')
+
+
+
+
+pZapisz = Button(root, text="Dodaj nowego studenta", command=obslugaDodawania)
+pZapisz.grid(row=5, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+pEdytuj = Button(root, text="Edytuj studenta", command=obslugaEdytowania)
+pEdytuj.grid(row=6, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+pUsun = Button(root, text="Usun studenta", command=obslugaUsuwania)
+pUsun.grid(row=7, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+def obslugaOcen():
+    global oidAktStudenta
+    idStudenta = oidAktStudenta
+    if idStudenta==0:
+        showinfo("Informacja","Nie wybrano studenta")
+        return
+
+    rootOceny = Tk()
+    rootOceny.title('Baza danych')
+    rootOceny.geometry('500x300')
+
+    kolumny = ('k_oid', 'k_ocena', 'k_przedmiot')
+
+    siatkaDanych = ttk.Treeview(rootOceny, columns=kolumny, show='headings', height=5)
+    siatkaDanych.column("k_oid", minwidth=10, width=50)
+    siatkaDanych.column("k_ocena", minwidth=10, width=50)
+    siatkaDanych.column("k_przedmiot", minwidth=10, width=50)
+
+    
+
+
+    siatkaDanych.heading('k_oid', text='ID')
+    siatkaDanych.heading("k_ocena", text='ocena')
+    siatkaDanych.heading('k_przedmiot', text='Przedmiot')
+
+
+
+    dbPolaczenie = sqlite3.connect('dziekanat.db')
+    dbKursor = dbPolaczenie.cursor()
+    # sqlQuery="CREATE TABLE oceny (ocena integer, przedmiot text, student_id integer)"
+    # dbKursor.execute(sqlQuery)
+    # dbPolaczenie.commit()
+    dbKursor.execute("select oid,* from oceny where student_id = :student_id",{"student_id":str(idStudenta)})
+    wynikZapytania=dbKursor.fetchall()
+    for wierszDanych in wynikZapytania:
+        siatkaDanych.insert('', END, values=wierszDanych)
+    dbPolaczenie.commit()
+    dbPolaczenie.close()
+
+
+    def odswiezanieBazyDanych():
+        siatkaDanych.delete(*siatkaDanych.get_children())
+        dbPolaczenie = sqlite3.connect('dziekanat.db')
+        dbKursor = dbPolaczenie.cursor()
+        dbKursor.execute("select oid,* from oceny where student_id = :student_id",{"student_id":str(idStudenta)})
+        wynikZapytania=dbKursor.fetchall()
+        for wierszDanych in wynikZapytania:
+            siatkaDanych.insert('', END, values=wierszDanych)
+        dbPolaczenie.commit()
+        dbPolaczenie.close()
+        srednia="Srednia: %.2f" % policzSrednia(idStudenta)
+        labelWynik = Label(rootOceny, text=srednia)
+        labelWynik.grid(row=5, column=0, columnspan=2)
+
+
+
+    def wyborWiersza(event):
+        global oidAktOcena
+        for selected_item in siatkaDanych.selection():
+            wybranyWiersz = siatkaDanych.item(selected_item)
+            wybraneWartosci = wybranyWiersz['values']
+            oidAktOcena=wybraneWartosci[0]
+
+
+    def obslugaDodawaniaOcen():
+        oknoDodawaniaOcen = Toplevel()
+        oknoDodawaniaOcen.title("Dodaj")
+        oknoDodawaniaOcen.geometry("400x150")
+
+        opcjeDoWyboru=['matematyka', 'polski']
+        wybrany = StringVar()
+        wybrany.set(opcjeDoWyboru[0])
+
+        def pokazWybor(wartosc):
+            pass
+
+        wybranyPrzedmiot = wybrany.get()
+        print(wybranyPrzedmiot)
+
+
+
+        opcjeDoWyboruOcen=['2', '3', '4', '5']
+        wybranyOcena = StringVar()
+        wybranyOcena.set(opcjeDoWyboruOcen[0])
+
+        def pokazWyborOcen(wartosc):
+            pass
+            # editPrzedmiot['text']=wybrany.get()
+
+        wybranaOcena = wybranyOcena.get()
+        print(wybranaOcena)
+
+
+        labelPrzedmiot = Label(oknoDodawaniaOcen, text="Przedmiot: ")
+        labelPrzedmiot.grid(row=0, column=0, padx=20)
+        editPrzedmiot = OptionMenu(oknoDodawaniaOcen, wybrany, *opcjeDoWyboru, command=pokazWybor)
+        # editPrzedmiot = Entry(oknoDodawaniaOcen, width=30)
+        editPrzedmiot.grid(row=0, column=1, padx=20)
+
+        labelOcena = Label(oknoDodawaniaOcen, text="Ocena: ")
+        labelOcena.grid(row=1, column=0, padx=20)
+        editOcena = OptionMenu(oknoDodawaniaOcen, wybranyOcena, *opcjeDoWyboruOcen, command=pokazWyborOcen)
+        # editOcena = Entry(oknoDodawaniaOcen, width=30)
+        editOcena.grid(row=1, column=1, padx=20)
+
+
+        labelWynik = Label(oknoDodawaniaOcen, text="")
+        labelWynik.grid(row=7, column=0, columnspan=2)
+
+
+
+        def dodajOceny():
+            global oidAktStudenta
+            idStudenta = oidAktStudenta
+            # print(idStudenta)
+            dbPolaczenie = sqlite3.connect('dziekanat.db')
+            dbKursor = dbPolaczenie.cursor()
+            dbKursor.execute("insert into oceny values (:p_ocena, :p_przedmiot, :p_student_id)",
+                            {
+                            'p_student_id':idStudenta,
+                            'p_przedmiot':wybrany.get(),
+                            # 'p_przedmiot':editPrzedmiot.get(),
+                            'p_ocena':wybranyOcena.get()
+                            })
+            dbPolaczenie.commit()
+            dbPolaczenie.close()
+
+            odswiezanieBazyDanych()
+        
+
+        pDodajOceny = Button(oknoDodawaniaOcen, text="Dodaj ocene", command=dodajOceny)
+        pDodajOceny.grid(row=5, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+
+
+    def obslugaEdytowaniaOcen():
+
+
+        oknoEdycjiOceny = Toplevel()
+        oknoEdycjiOceny.title("Edytuj")
+        oknoEdycjiOceny.geometry("400x150")
+
+        opcjeDoWyboru=['matematyka', 'polski']
+        wybrany = StringVar()
+        wybrany.set(opcjeDoWyboru[0])
+
+        def pokazWybor(wartosc):
+            pass
+            # editPrzedmiot['text']=wybrany.get()
+
+        wybranyPrzedmiot = wybrany.get()
+        print(wybranyPrzedmiot)
+
+        labelPrzedmiot = Label(oknoEdycjiOceny, text="Przedmiot: ")
+        labelPrzedmiot.grid(row=0, column=0, padx=20)
+        editPrzedmiot = OptionMenu(oknoEdycjiOceny, wybrany, *opcjeDoWyboru, command=pokazWybor)
+        # editPrzedmiot = Entry(oknoEdycjiOceny, width=30)
+        editPrzedmiot.grid(row=0, column=1, padx=20)
+
+        labelOcena = Label(oknoEdycjiOceny, text="Ocena: ")
+        labelOcena.grid(row=1, column=0, padx=20)
+        editOcena = Entry(oknoEdycjiOceny, width=30)
+        editOcena.grid(row=1, column=1, padx=20)
+
+
+        labelWynik = Label(oknoEdycjiOceny, text="")
+        labelWynik.grid(row=7, column=0, columnspan=2)
+
+
+        global oidAktStudenta
+        idStudenta=oidAktStudenta
+        global oidAktOcena
+        dbPolaczenie = sqlite3.connect('dziekanat.db')
+        dbKursor = dbPolaczenie.cursor()
+        query = "select * from oceny where oid = "+str(oidAktOcena)
+        dbKursor.execute(query)
+
+        wynikZapytania=dbKursor.fetchall()
+        if(len(wynikZapytania)>0):
+            # editPrzedmiot.delete(0, END)
+            # editPrzedmiot.insert(0, str(wynikZapytania[0][1]))
+            editOcena.delete(0, END)
+            editOcena.insert(0, str(wynikZapytania[0][0]))
+        else:
+            showinfo("Informacja","Nie ma oceny o podanym identyfikatorze")
+
+        dbPolaczenie.commit()
+        dbPolaczenie.close()
+
+        def edytujOcene():
+            dbPolaczenie = sqlite3.connect('dziekanat.db')
+            dbKursor = dbPolaczenie.cursor()
+            dbKursor.execute("update oceny set ocena = :p_ocena, przedmiot = :p_przedmiot, student_id = :p_student_id where oid=:p_oid",
+                            {
+                            'p_student_id':idStudenta,
+                            'p_przedmiot':wybrany.get(),
+                            # 'p_przedmiot':editPrzedmiot.get(),
+                            'p_ocena':editOcena.get(),
+                            'p_oid':str(oidAktOcena)
+                            })
+            dbPolaczenie.commit()
+            dbPolaczenie.close()   
+
+            odswiezanieBazyDanych()
+
+        pEdytuj = Button(oknoEdycjiOceny, text="Edytuj", command=edytujOcene)
+        pEdytuj.grid(row=5, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+
+    def usunOcene(usuwaneOID):
+        dbPolaczenie = sqlite3.connect('dziekanat.db')
+        dbKursor = dbPolaczenie.cursor()
+        dbKursor.execute("delete from oceny where oid = "+str(usuwaneOID))
+        dbPolaczenie.commit()
+        dbPolaczenie.close()
+
+        odswiezanieBazyDanych()
+
+    def obslugaUsuwaniaOcen():
+        global oidAktOcena
+        pomUsuwane=oidAktOcena
+        wynik = askquestion("Zapytanie", "Czy na pewno chcesz usunąć ocene o ID "+str(pomUsuwane)+" ?") 
+        if wynik=="yes":
+            usunOcene(pomUsuwane)
+        return
+
+
+
+
+    siatkaDanych.bind('<<TreeviewSelect>>', wyborWiersza)
+
+    siatkaDanych.grid(row=0, column=0, sticky='nsew')
+
+    scrollbar = ttk.Scrollbar(rootOceny, orient=VERTICAL, command=siatkaDanych.yview)
+    siatkaDanych.configure(yscroll=scrollbar.set)
+    scrollbar.grid(row=0, column=1, sticky='ns')
+
+
+    def policzSrednia(idSrednia):
+        dbPolaczenie = sqlite3.connect('dziekanat.db')
+        dbKursor = dbPolaczenie.cursor()
+        dbKursor.execute("select oid,* from oceny where student_id = :student_id",{"student_id":str(idSrednia)})
+        wynikZapytania=dbKursor.fetchall()
+        liczbaOcen=len(wynikZapytania)
+        suma = 0
+        for wierszDanych in wynikZapytania:
+            suma=suma+wierszDanych[1]
+        dbPolaczenie.commit()
+        dbPolaczenie.close()
+        return suma/liczbaOcen
+    
+    srednia="Srednia: %.2f" % policzSrednia(idStudenta)
+
+
+
+    labelWynik = Label(rootOceny, text=srednia)
+    labelWynik.grid(row=5, column=0, columnspan=2)
+    
+
+    pDodajOcene = Button(rootOceny, text="Dodaj ocene", command=obslugaDodawaniaOcen)
+    pDodajOcene.grid(row=6, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+    pEdytujOcene = Button(rootOceny, text="Edytuj ocene", command=obslugaEdytowaniaOcen)
+    pEdytujOcene.grid(row=7, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+    pUsun = Button(rootOceny, text="Usun", command=obslugaUsuwaniaOcen)
+    pUsun.grid(row=8, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+
+
+    rootOceny.mainloop()
+    
+
+pOceny = Button(root, text="Pokaż oceny", command=obslugaOcen)
+pOceny.grid(row=8, column=0, columnspan=2, pady=10, padx=20, ipadx=100)
+
+
+
+
+
+
+
+root.mainloop()
+
